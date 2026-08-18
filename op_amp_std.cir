@@ -1,0 +1,56 @@
+My two stage CMOS op-amp - open loop
+
+* ---------------- Stage 1 ----------------
+M1 d1 vin_l tail vdd PMOS W=20u L=1u
+
+M2 d2 vin_h tail vdd PMOS W=20u L=1u
+
+M3 d1 d1 vss vss NMOS W=20u L=1u
+
+M4 d2 d1 vss vss NMOS W=20u L=1u
+
+M5 tail pbias vdd vdd PMOS W=20u L=1u
+
+M8 pbias pbias vdd vdd PMOS W=20u L=1u
+
+I_ref pbias vss DC 20u $ 1:1 mirror -> tail = 20uA
+
+* ---------------- Stage 2 ----------------
+M7 v0 pbias vdd vdd PMOS W=20u L=1u
+
+M6 v0 d2 vss vss NMOS W=40u L=1u
+
+* ---------------- Capacitors ----------------
+Cc d2 v0 5p
+
+Cl v0 0 5p
+
+* ---------------- Voltages ----------------
+Vdd vdd 0 DC 2.5
+
+Vss vss 0 DC -2.5
+
+Vin_h vin_h 0 DC 0 AC 1
+
+Vin_l vin_l 0 DC 0 
+
+* ---------------- Models ----------------
+.model NMOS NMOS (LEVEL=1 VTO=0.7 KP=110u LAMBDA=0.04)
+
+.model PMOS PMOS (LEVEL=1 VTO=-0.8 KP=50u LAMBDA=0.05)
+
+.control
+op
+print v(pbias) v(tail) v(d1) v(d2) v(v0)
+print @m1[id] @m2[id] @m5[id] @m6[id] @m7[id]
+ac dec 50 1 1G
+let gaindb = vdb(v0)
+let phasedeg = vp(v0)*180/3.14159265
+meas ac A0_dB find gaindb at=1
+meas ac GBW_Hz when gaindb=0
+meas ac PM_raw find phasedeg when gaindb=0
+meas ac phase_lowf find phasedeg at=1
+wrdata openloop.txt vdb(v0) vp(v0)
+.endc
+
+.end

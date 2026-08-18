@@ -1,0 +1,58 @@
+Two stage CMOS op-amp - closed loop
+
+* ---------------- Stage 1 ----------------
+M1 d1 vin_l tail vdd PMOS W=20u L=1u
+
+M2 d2 vin_h tail vdd PMOS W=20u L=1u
+
+M3 d1 d1 vss vss NMOS W=20u L=1u
+
+M4 d2 d1 vss vss NMOS W=20u L=1u
+
+M5 tail pbias vdd vdd PMOS W=20u L=1u
+
+M8 pbias pbias vdd vdd PMOS W=20u L=1u
+
+I_ref pbias vss DC 20u $ 1:1 mirror -> tail = 20uA
+
+* ---------------- Stage 2 ----------------
+M7 v0 pbias vdd vdd PMOS W=20u L=1u
+
+M6 v0 d2 vss vss NMOS W=40u L=1u
+
+* ---------------- Resistors ----------------
+R1 vin_l 0 100k
+Rf v0 vin_l 4.9meg
+
+* ---------------- Capacitors ----------------
+Cc d2 v0 5p
+
+Cl v0 0 5p
+
+* ---------------- Voltages ----------------
+Vdd vdd 0 DC 2.5
+
+Vss vss 0 DC -2.5
+
+Vin_h vin_h 0 DC 0 AC 1
+
+* ---------------- Models ----------------
+.model NMOS NMOS (LEVEL=1 VTO=0.7 KP=110u LAMBDA=0.04)
+
+.model PMOS PMOS (LEVEL=1 VTO=-0.8 KP=50u LAMBDA=0.05)
+
+.control
+op
+print v(pbias) v(tail) v(d1) v(d2) v(v0)
+print @m1[id] @m2[id] @m5[id] @m6[id] @m7[id]
+print v(vin_h) v(vin_l) v(v0)
+ac dec 100 1k 10meg
+let acl_db = vdb(v0)
+meas ac acl_lowf find acl_db at=1k
+let acl_lin = mag(v(v0))
+let err = abs(acl_lin - 50) / 50
+meas ac f_break when err=0.05
+wrdata cl_acl50.txt vdb(v0) vp(v0)
+.endc
+
+.end

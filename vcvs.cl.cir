@@ -1,0 +1,23 @@
+VCVS control - ideal single-pole op-amp - closed loop
+
+* --- ideal amplifier: A0 = 46600, single pole at 103.3 Hz ---
+E1 vamp 0 vin_h vin_l 46600
+Rp vamp v0 1meg
+Cp v0 0 1.546n
+
+* --- same feedback network as the real circuit ---
+R1 vin_l 0 100k
+Rf v0 vin_l 4900k
+
+Vin_h vin_h 0 DC 0 AC 1
+
+.control
+ac dec 100 1k 10meg
+let a = mag(v(v0))
+let adb = vdb(v0)
+meas ac acl_lowf find adb at=1k
+let err = abs(a - 50)/50
+meas ac f_break when err=0.05
+.endc
+
+.end
