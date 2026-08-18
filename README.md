@@ -43,14 +43,87 @@
 
 ## 실행 방법
 
-<!-- TODO: 실제로 돌린 sweep 스크립트/명령으로 교체 -->
-```bash
-# 1. A_cl sweep — 각 설정의 f_break 측정 및 results.txt 생성
-#    (실제 사용한 bash 루프 / 명령을 여기에 입력)
+## 실행 방법
 
-# 2. 그래프 생성
-python scripts/fig1.py
-python scripts/fig2.py
+> 환경: WSL Ubuntu + ngspice. 회로 파일명은 `op_amp_lab.cir`(실제 회로), `vcvs.cl.cir`(대조군) 기준입니다.
+
+**1. Open-loop 특성 측정 (A₀, GBW, PM)**
+```bash
+ngspice -b op_amp_lab.cir     # 실제 2단 CMOS op-amp
+ngspice -b vcvs.cl.cir        # VCVS 대조군
+```
+
+**2. Cc 스윕 — PM 45°를 만족하는 최소 Cc(5pF) 결정**
+```bash
+for cc in 1p 2p 5p 10p 20p 50p; do
+  echo "--- Cc = $cc ---"
+  sed "s/^Cc d2 v0 5p/Cc d2 v0 $cc/" op_amp_lab.cir > tmp.cir
+  ngspice -b tmp.cir 2>&1 | grep -E "a0_db|gbw_hz|pm_raw"
+done
+```
+
+**3. 메인 sweep — 실제 회로 (A_cl 2~50, `results.txt` 생성)**
+```bash
+echo "# acl fbreak lowf group - lab" > results.txt
+for cfg in "2 100k" "3 200k" "4 300k" "5 400k" "7 600k" "10 900k" "15 1400k" "20 1900k" "30 2900k" "50 4900k"; do
+  set -- $cfg; acl=$1; rf=$2
+  sed -e "s|^Rf v0 vin_l .*|Rf v0 vin_l $rf|" \
+      -e "s|abs(acl_lin - [0-9]*) */ *[0-9]*|abs(acl_lin - $acl)/$acl|" \
+      op_amp_lab.cir > tmp.cir
+  out=$(ngspice -b tmp.cir 2>&1)
+  fb=$(echo "$out" | grep '^f_break' | grep -oE '[0-9.]+e[+-][0-9]+')
+  lowf=$(echo "$out" | grep 'acl_lowf' | grep -oE '[0-9.]+e[+-][0-9]+')
+  echo "$acl $fb $lowf real" | tee -a results.txt
+done
+```
+
+**4. 메인 sweep — VCVS 대조군 (`results.txt`에 append)**
+```bash
+echo "" >> results.txt
+echo "#acl fbreak lowf group - vcvs" >> results.txt
+for cfg in "2 100k" "3 200k" "4 300k" "5 400k" "7 600k" "10 900k" "15 1400k" "20 1900k" "30 2900k" "50 4900k"; do
+  set -- $cfg; acl=$1; rf=$2
+  sed -e "s|^Rf v0 vin_l .*|Rf v0 vin_l $rf|" \
+      -e "s|abs(a - [0-9]*) */ *[0-9]*|abs(a - $acl)/$acl|" \
+      vcvs.cl.cir > tmp.cir
+  out=$(ngspice -b tmp.cir 2>&1)
+  fb=$(echo "$out" | grep '^f_break' | grep -oE '[0-9.]+e[+-][0-9]+')
+  lowf=$(echo "$out" | grep 'acl_lowf' | grep -oE '[0-9.]+e[+-][0-9]+')
+  echo "$acl $fb $lowf vcvs" | tee -a results.txt
+done
+```
+
+**5. Bode 곡선 데이터 생성 (그래프용, `data/cl_acl{N}.txt`)**
+```bash
+for cfg in "2 100k" "3 200k" "4 300k" "5 400k" "7 600k" "10 900k" "15 1400k" "20 1900k" "30 2900k" "50 4900k"; do
+  set -- $cfg; acl=$1; rf=$2
+  sed -e "s|^Rf v0 vin_l .*|Rf v0 vin_l $rf|" \
+      -e "s|abs(acl_lin - [0-9]*) */ *[0-9]*|abs(acl_lin - $acl)/$acl|" \
+      -e "s|wrdata [^ ]*|wrdata data/cl_acl${acl}.txt|" \
+      op_amp_lab.cir > tmp.cir
+  ngspice -b tmp.cir 2>&1 | grep -E "acl_lowf|f_break"
+done
+```
+
+**6. Loading check (R1·Rf 10배, `loading_check.txt` 생성)**
+```bash
+for cfg in "2 1meg 1meg" "10 1meg 9meg" "50 1meg 49meg"; do
+  set -- $cfg; acl=$1; r1=$2; rf=$3
+  sed -e "s|^R1 vin_l 0 .*|R1 vin_l 0 $r1|" \
+      -e "s|^Rf v0 vin_l .*|Rf v0 vin_l $rf|" \
+      -e "s|abs(acl_lin - [0-9]*) */ *[0-9]*|abs(acl_lin - $acl)/$acl|" \
+      op_amp_lab.cir > tmp.cir
+  out=$(ngspice -b tmp.cir 2>&1)
+  fb=$(echo "$out" | grep '^f_break' | grep -oE '[0-9.]+e[+-][0-9]+')
+  lowf=$(echo "$out" | grep 'acl_lowf' | grep -oE '[0-9.]+e[+-][0-9]+')
+  echo "$acl $fb $lowf load10x" | tee -a loading_check.txt
+done
+```
+
+**7. 그래프 생성**
+```bash
+python fig1.py
+python fig2.py
 ```
 
 ## 검증
