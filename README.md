@@ -1,6 +1,11 @@
 # 2단 CMOS Op-amp의 이상적 근사 유효 한계 규명
 
-전기회로 과목에서 배우는 op-amp의 **이상적 근사**(`A_cl = 1 + Rf/R1`)가 실제로 어느 주파수까지 유효한지를 ngspice 시뮬레이션으로 정량적으로 규명한 학부 프로젝트입니다.
+전기회로 과목에서 배우는 op-amp의 **이상적 근사**(`A_cl = 1 + Rf/R1`)가 실제로 어느 주파수까지 유효한지를 ngspice 시뮬레이션으로 정량적으로 규명한 학부생 개인 프로젝트입니다.
+
+**[EN]** Investigated where the ideal op-amp approximation breaks down 
+in a two-stage CMOS op-amp using ngspice. A_cl × f_break converges to 
+theory at high gain but deviates up to ~65% at low gain; a VCVS control 
+group (0.97%) confirms the cause is the circuit's non-dominant pole.
 
 ## 개요
 
