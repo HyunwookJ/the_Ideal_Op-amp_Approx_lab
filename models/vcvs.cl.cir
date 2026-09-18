@@ -16,7 +16,7 @@ ac dec 100 1k 10meg
 let a = mag(v(v0))
 let adb = vdb(v0)
 meas ac acl_lowf find adb at=1k
-let err = abs(a - 50)/50
+let err = abs(a - 50)/50 ; you need to change the values to set the desired gain (e.g. A_cl = 50)
 meas ac f_break when err=0.05
 .endc
 
