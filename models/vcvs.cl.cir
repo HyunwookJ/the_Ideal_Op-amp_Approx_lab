@@ -1,6 +1,6 @@
 VCVS control - ideal single-pole op-amp - closed loop
 
-* --- ideal amplifier: A0 = 46600, single pole at 103.3 Hz ---
+* --- ideal amplifier: A0 = 46600, single pole at 102.95 Hz (GBW = 4.797 MHz) ---
 E1 vamp 0 vin_h vin_l 46600
 Rp vamp v0 1meg
 Cp v0 0 1.546n
